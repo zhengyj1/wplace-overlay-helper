@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "WPlace Overlay Helper",
+  "description": "Overlay an image on any page (e.g., wplace) with adjustable size, position, and opacity. Drag, wheel to scale, paste/drag local images.",
+  "version": "2.1.1",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "WPlace Overlay Helper",
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
