@@ -65,7 +65,7 @@ Overlay a semi-transparent reference image on any webpage (e.g., wplace). Drag t
 | Action / 操作                  |          Shortcut / 快捷键          |
 |--------------------------------|-------------------------------------|
 | Move image / 移动图像           |      Alt + Drag / Alt + 拖动        |
-| Scale image / 缩放图像          | Alt + Mouse Wheel / Alt +  '+' '-'  |
+| Scale image / 缩放图像          |  Alt + '+' '-'   /  Alt +  '+' '-'  |
 | Adjust opacity / 调节透明度     |         `Alt` + `1 - 9`             |
 | Fit to Width / 适应宽度         |           button /  按钮            |
 | Fit to Height / 适应高度        |           button /  按钮            |
