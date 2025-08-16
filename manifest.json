@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "WPlace Overlay Helper",
-  "description": "Overlay an image on any page (e.g., wplace) with adjustable size, position, and opacity. Drag, wheel to scale, paste/drag local images.",
-  "version": "2.1.1",
+  "description": "Overlay a semi-transparent reference image on any webpage (e.g., wplace). Drag to move, Alt+'+'/'-' to scale, adjust opacity. Purely manual—no automation.",
+  "version": "2.2.0",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

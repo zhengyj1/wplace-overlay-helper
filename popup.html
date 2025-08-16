@@ -6,13 +6,15 @@
   <title>WPlace Overlay Helper</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body{font:14px/1.4 system-ui, sans-serif; margin:12px; min-width:280px; color:#111; padding-bottom:4px}
+    body{font:14px/1.4 system-ui, sans-serif; margin:12px; min-width:340px; color:#111; padding-bottom:6px}
     .row{display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-bottom:8px}
     input[type="text"]{flex:1; min-width:160px; padding:6px 8px; border:1px solid #ccc; border-radius:6px}
     input[type="range"]{width:160px}
+    input[type="number"]{width:90px; padding:6px 8px; border:1px solid #ccc; border-radius:6px}
     button{padding:6px 10px; border:1px solid #bbb; background:#fff; border-radius:6px; cursor:pointer}
     button:active{transform:translateY(1px)}
     small{color:#666}
+    .right{margin-left:auto}
     .foot{display:flex; flex-direction:column; align-items:flex-end; margin-top:8px; opacity:.8; font-size:12px; line-height:1.2}
   </style>
 </head>
@@ -21,6 +23,7 @@
     <button id="btn-show">Show</button>
     <button id="btn-hide">Hide</button>
     <button id="btn-remove">Remove</button>
+    <label class="right"><input type="checkbox" id="panelVisible"> Show Panel</label>
   </div>
   <div class="row">
     <input id="url" type="text" placeholder="Image URL (http/https/data:)">
@@ -28,19 +31,24 @@
   </div>
   <div class="row">
     <input id="file" type="file" accept="image/*">
-    <small>从弹窗直接选择本地图片</small>
+    <small>Choose a local image</small>
+  </div>
+  <div class="row">
+    <label>Scale</label>
+    <input id="scaleRange" type="range" min="0" max="3" step="0.01" value="1.00">
+    <input id="scaleInput" type="number" min="0" max="3" step="0.01" value="1.00">
   </div>
   <div class="row">
     <label>Opacity</label>
-    <input id="opacity" type="range" min="0" max="1" step="0.01" value="0.40">
-    <span id="opval">0.40</span>
+    <input id="opacityRange" type="range" min="0" max="1" step="0.01" value="0.40">
+    <input id="opacityInput" type="number" min="0" max="1" step="0.01" value="0.40">
   </div>
   <div class="row">
     <button id="btn-fitw">Fit-W</button>
     <button id="btn-fith">Fit-H</button>
     <button id="btn-reset">Reset</button>
   </div>
-  <small>页面内也可：按住 Alt 拖动/滚轮缩放，[ / ] 改透明度，W/H 适配，0 重置，X 显隐，Delete 移除。</small>
+  <small>Shortcuts: Alt + +/- to scale; Alt+[ / ] opacity; Alt+W/H fit; Alt+X toggle; Alt+0 reset.</small>
   <div class="foot">
     <div>本扩展免费提供</div>
     <div>Created By Zhengyj</div>

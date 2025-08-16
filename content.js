@@ -1,37 +1,48 @@
 
-// WPlace Overlay Helper - Stable content script (based on v2.1.1 behavior)
+// WPlace Overlay Helper - 2.2.0 (stabilized)
 (() => {
+  'use strict';
   const STATE_KEY = "wpo_state::" + location.origin;
   let overlay=null, img=null, panel=null;
-  let tx=innerWidth/2, ty=innerHeight/2, scale=1, opacity=.4;
+  let tx=innerWidth/2, ty=innerHeight/2, scale=1, opacity=.4, panelVisible=true;
   let dragging=false, sx=0, sy=0, bx=0, by=0, edit=false;
   let naturalW=0, naturalH=0, visible=false;
+  let saveTimer = null;
 
-  function save(){
-    const data={tx,ty,scale,opacity,visible, src: img? img.src : null};
-    chrome.storage.local.set({[STATE_KEY]:data});
+  const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+
+  function saveNow(){
+    try {
+      const data={tx,ty,scale,opacity,visible,panelVisible, src: (img && img.src && !img.src.startsWith('blob:')) ? img.src : null};
+      chrome.storage.local.set({[STATE_KEY]:data});
+    } catch(e){ /* ignore */ }
+  }
+  function saveDeferred(){
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveNow, 200); // throttle writes to avoid jank
   }
   function load(){
     return new Promise(r=>{
-      chrome.storage.local.get(STATE_KEY, res=>{
-        const st=res[STATE_KEY];
+      chrome.storage.local.get(STATE_KEY,res=>{
+        const st=res?.[STATE_KEY];
         if(st){
-          tx=st.tx??tx; ty=st.ty??ty; scale=st.scale??scale; opacity=st.opacity??opacity; visible=st.visible??false;
-          if(st.src && img) img.src=st.src;
+          tx=st.tx??tx; ty=st.ty??ty; scale=st.scale??scale; opacity=st.opacity??opacity;
+          visible=st.visible??false; panelVisible = st.panelVisible ?? true;
         }
         r();
       });
     });
   }
+
   function apply(){
     if(!img) return;
     img.style.opacity=String(opacity);
     img.style.left=tx+"px"; img.style.top=ty+"px";
     img.style.transform=`translate(-50%,-50%) scale(${scale})`;
-    panel?.querySelector("#wpo-scale")?.replaceChildren(document.createTextNode(scale.toFixed(2)+"x"));
-    panel?.querySelector("#wpo-op")?.replaceChildren(document.createTextNode(opacity.toFixed(2)));
-    const r=panel?.querySelector("#wpo-op-range"); if(r) r.value=String(opacity);
-    save();
+    const $s=panel?.querySelector("#wpo-scale"); if($s) $s.textContent = scale.toFixed(2)+"x";
+    const $o=panel?.querySelector("#wpo-op"); if($o) $o.textContent = opacity.toFixed(2);
+    const $or=panel?.querySelector("#wpo-op-range"); if($or) $or.value=String(opacity);
+    saveDeferred();
   }
   function setSrc(src){
     if(!src) return;
@@ -39,19 +50,22 @@
     img.onerror=()=>console.warn("[WPO] image load failed");
     img.src=src;
   }
-  function fitW(){ if(naturalW){ scale=innerWidth/naturalW; apply(); } }
-  function fitH(){ if(naturalH){ scale=innerHeight/naturalH; apply(); } }
+  function fitW(){ if(naturalW){ scale=innerWidth/naturalW; scale=clamp(scale, 0, 3); apply(); } }
+  function fitH(){ if(naturalH){ scale=innerHeight/naturalH; scale=clamp(scale, 0, 3); apply(); } }
   function reset(){ tx=innerWidth/2; ty=innerHeight/2; scale=1; opacity=.4; apply(); }
 
   function ensure(){
     if(overlay) return;
     overlay=document.createElement("div");
-    Object.assign(overlay.style,{position:"fixed",inset:"0",zIndex:"999999",pointerEvents:"none"});
+    Object.assign(overlay.style,{position:"fixed",inset:"0",zIndex:"2147483647",pointerEvents:"none"});
     overlay.id="__wpo_overlay";
     document.documentElement.appendChild(overlay);
 
     img=document.createElement("img");
     Object.assign(img.style,{position:"absolute",transformOrigin:"center center",willChange:"transform,opacity",userSelect:"none",WebkitUserDrag:"none"});
+    img.style.imageRendering = "pixelated";
+    img.referrerPolicy = "no-referrer";
+    img.crossOrigin = "anonymous";
     overlay.appendChild(img);
 
     panel=document.createElement("div");
@@ -75,7 +89,7 @@
           <span>Overlay</span>
           <span>scale:<b id="wpo-scale">1.00x</b></span>
           <span>opacity:<b id="wpo-op">0.40</b></span>
-          <span class="wpo-badge">Alt=编辑 | 拖/滚轮/粘贴/拖图</span>
+          <span class="wpo-badge">Alt=编辑 | 拖/粘贴/拖图</span>
         </div>
         <div class="wpo-row" style="margin-top:4px">
           <input id="wpo-op-range" class="wpo-range" type="range" min="0" max="1" step="0.01" value="0.4">
@@ -88,7 +102,7 @@
           <button id="wpo-remove" class="wpo-btn">Remove</button>
         </div>
         <div class="wpo-hint">
-          <div><span class="wpo-k">Alt</span> + 拖动：移动 | <span class="wpo-k">Alt</span> + 滚轮：缩放（配合 Ctrl/⌘ 更细）</div>
+          <div><span class="wpo-k">Alt</span> + 拖动：移动 | <span class="wpo-k">Alt</span> + + / -：缩放</div>
           <div><span class="wpo-k">Alt</span> + [ / ]：透明度 − / ＋ | <span class="wpo-k">Alt</span> + 1..9：设为 0.1..0.9</div>
           <div><span class="wpo-k">Alt</span> + W/H：适配宽/高 | <span class="wpo-k">Alt</span> + 0：重置 | <span class="wpo-k">Alt</span> + X：显隐 | <span class="wpo-k">Alt</span> + Delete：移除</div>
           <div class="wpo-free">本扩展免费提供</div>
@@ -97,26 +111,7 @@
       </div>
     `;
     overlay.appendChild(panel);
-
-    // Hidden input for in-page Load (备用)
-    const fileInput=document.createElement('input');
-    fileInput.type='file'; fileInput.accept='image/*'; fileInput.style.display='none';
-    document.documentElement.appendChild(fileInput);
-    fileInput.addEventListener('change',()=>{
-      const f=fileInput.files&&fileInput.files[0]; if(!f) return;
-      const r=new FileReader(); r.onload=()=>setSrc(r.result); r.readAsDataURL(f); fileInput.value='';
-    });
-
-    // Panel interactions
-    panel.addEventListener('pointerdown', e=>{ if(!edit) return; panel.style.pointerEvents='auto'; setTimeout(()=>panel.style.pointerEvents='none',0); });
-    const $url=panel.querySelector('#wpo-url');
-    panel.querySelector('#wpo-set-url').onclick=()=>{ if(edit){ const v=$url.value.trim(); if(v) setSrc(v);} };
-    panel.querySelector('#wpo-op-range').addEventListener('input',e=>{ opacity=Math.min(1,Math.max(0,parseFloat(e.target.value))); apply(); });
-    panel.querySelector('#wpo-fit-w').onclick=()=>{ if(edit) fitW(); };
-    panel.querySelector('#wpo-fit-h').onclick=()=>{ if(edit) fitH(); };
-    panel.querySelector('#wpo-reset').onclick=()=>{ if(edit) reset(); };
-    panel.querySelector('#wpo-hide').onclick=()=>{ if(edit) img.style.display=(img.style.display==='none')?'':''; };
-    panel.querySelector('#wpo-remove').onclick=()=>{ if(edit) { if(overlay&&overlay.parentNode) overlay.parentNode.removeChild(overlay); overlay=null; img=null; panel=null; visible=false; save(); } };
+    if (!panelVisible) panel.style.display = "none";
 
     // Drag & drop
     function handleFiles(files){
@@ -130,8 +125,6 @@
       if(e.dataTransfer?.files?.length) handleFiles(e.dataTransfer.files);
       else if(e.dataTransfer?.items){ const it=[...e.dataTransfer.items].find(i=>i.kind==='file'); if(it){ const f=it.getAsFile(); if(f) handleFiles([f]); } }
     });
-
-    // Paste
     addEventListener('paste', e=>{
       const items=e.clipboardData&&e.clipboardData.items; if(!items) return;
       for(const it of items){ if(it.type?.startsWith('image/')){ const f=it.getAsFile(); if(f) handleFiles([f]); break; } }
@@ -141,35 +134,50 @@
     addEventListener('pointerdown', e=>{ if(!e.altKey) return; edit=true; dragging=true; sx=e.clientX; sy=e.clientY; bx=tx; by=ty; e.preventDefault(); }, {capture:true});
     addEventListener('pointermove', e=>{ if(!dragging) return; const dx=e.clientX-sx, dy=e.clientY-sy; tx=bx+dx; ty=by+dy; apply(); }, {capture:true});
     addEventListener('pointerup', ()=>{ dragging=false; }, {capture:true});
-    addEventListener('wheel', e=>{ if(!e.altKey) return; edit=true; const factor=e.deltaY<0?1.05:0.95; const mul=(e.ctrlKey||e.metaKey)?Math.pow(factor,.2):factor; scale=Math.max(.05,Math.min(100,scale*mul)); apply(); e.preventDefault(); }, {passive:false});
+
+    // NO wheel scaling (per request)
+
+    // Keyboard scale: ONLY Alt + +/-
     addEventListener('keydown', e=>{
-      if(!e.altKey) return; edit=true; const k=e.key.toLowerCase();
-      if(k==='['){ opacity=Math.max(0,opacity-.05); apply(); }
-      else if(k===']'){ opacity=Math.min(1,opacity+.05); apply(); }
-      else if(k==='w'){ fitW(); }
-      else if(k==='h'){ fitH(); }
-      else if(k==='0'){ reset(); }
-      else if(k==='x'){ img.style.display=(img.style.display==='none')?'':''; }
-      else if(k>='1'&&k<='9'){ opacity=(k.charCodeAt(0)-48)/10; apply(); }
-      else if(k==='backspace'||k==='delete'){ if(overlay&&overlay.parentNode) overlay.parentNode.removeChild(overlay); overlay=null; img=null; panel=null; visible=false; save(); }
+      if(!e.altKey) return;
+      edit = true;
+      const k = e.key;
+      let handled = false;
+      const stepUp = () => { scale = clamp(scale * 1.05, 0, 3); handled = true; };
+      const stepDown = () => { scale = clamp(scale * 0.95, 0, 3); handled = true; };
+      if (k === '+' || k === 'Add' || k === 'NumpadAdd' || (k === '=' && e.shiftKey)) stepUp();
+      else if (k === '-' || k === 'Subtract' || k === 'NumpadSubtract') stepDown();
+      else if (k === '[') { opacity = clamp(opacity - 0.05, 0, 1); handled = true; }
+      else if (k === ']') { opacity = clamp(opacity + 0.05, 0, 1); handled = true; }
+      else if (k === 'w') { fitW(); handled=true; }
+      else if (k === 'h') { fitH(); handled=true; }
+      else if (k === '0') { reset(); handled=true; }
+      else if (k === 'x') { img.style.display=(img.style.display==='none')?'':''; handled=true; }
+      else if (k >= '1' && k <= '9') { opacity = clamp((k.charCodeAt(0)-48)/10, 0, 1); handled=true; }
+      else if (k === 'Backspace' || k === 'Delete') { if(overlay&&overlay.parentNode) overlay.parentNode.removeChild(overlay); overlay=null; img=null; panel=null; visible=false; saveNow(); handled=true; }
+      if (handled){ apply(); e.preventDefault(); }
     });
     addEventListener('resize', ()=>{ tx=Math.min(Math.max(0,tx),innerWidth); ty=Math.min(Math.max(0,ty),innerHeight); apply(); });
     addEventListener('keyup', e=>{ if(e.key==='Alt') edit=false; });
   }
 
-  function show(){ ensure(); overlay.style.display=''; visible=true; save(); }
-  function hide(){ if(!overlay) return; overlay.style.display='none'; visible=false; save(); }
+  function show(){ ensure(); overlay.style.display=''; visible=true; saveNow(); if (panel) panel.style.display = panelVisible ? '' : 'none'; }
+  function hide(){ if(!overlay) return; overlay.style.display='none'; visible=false; saveNow(); }
 
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse)=>{
     if(!msg||!msg.type) return;
     switch(msg.type){
+      case 'wpo_ping': sendResponse({ok:true, ready:true}); break;
       case 'wpo_create_or_show': show(); sendResponse({ok:true}); break;
       case 'wpo_hide': hide(); sendResponse({ok:true}); break;
-      case 'wpo_remove': if(overlay&&overlay.parentNode) overlay.parentNode.removeChild(overlay); overlay=null; img=null; panel=null; visible=false; save(); sendResponse({ok:true}); break;
+      case 'wpo_remove': if(overlay&&overlay.parentNode) overlay.parentNode.removeChild(overlay); overlay=null; img=null; panel=null; visible=false; saveNow(); sendResponse({ok:true}); break;
       case 'wpo_set_url': ensure(); setSrc(msg.url); show(); sendResponse({ok:true}); break;
-      case 'wpo_set_opacity': ensure(); opacity=Math.min(1,Math.max(0,Number(msg.opacity))); apply(); sendResponse({ok:true}); break;
+      case 'wpo_set_opacity': ensure(); opacity=clamp(Number(msg.opacity)||0,0,1); apply(); sendResponse({ok:true}); break;
+      case 'wpo_set_scale': ensure(); scale=clamp(Number(msg.scale)||1,0,3); apply(); sendResponse({ok:true}); break;
       case 'wpo_fit': ensure(); (msg.mode==='width'?fitW:fitH)(); sendResponse({ok:true}); break;
       case 'wpo_reset': ensure(); reset(); sendResponse({ok:true}); break;
+      case 'wpo_get_state': ensure(); sendResponse({ok:true, scale, opacity, panelVisible, visible}); break;
+      case 'wpo_set_panel_visible': ensure(); panelVisible = !!msg.panelVisible; if(panel) panel.style.display = panelVisible ? '' : 'none'; saveNow(); sendResponse({ok:true}); break;
       case 'wpo_set_data_url': ensure(); setSrc(msg.dataUrl); show(); sendResponse({ok:true}); break;
       default: break;
     }
@@ -177,9 +185,14 @@
   });
 
   (async()=>{
-    ensure(); hide();
-    await load(); apply();
-    if(visible) show();
-    console.debug('[WPO] ready on', location.origin);
+    try {
+      ensure(); hide();
+      await load(); apply();
+      if (panel) panel.style.display = panelVisible ? '' : 'none';
+      if(visible) show();
+      console.debug('[WPO] ready on', location.origin);
+    } catch(e){
+      console.warn('[WPO] init error', e);
+    }
   })();
 })();
