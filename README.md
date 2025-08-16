@@ -19,8 +19,8 @@ Overlay a semi-transparent reference image on any webpage (e.g., wplace). Drag t
 - **Adjustable opacity**: Slider or keyboard shortcuts.  
   **可调节透明度**：支持滑块或快捷键调整。  
 
-- **Resizable**: Use mouse wheel or shortcuts to zoom in/out.  
-  **可缩放大小**：鼠标滚轮或快捷键缩放。  
+- **Resizable**: Use Alt + "+" "-" to zoom in/out.  
+  **可缩放大小**： Alt +  "+"  "-" 缩放。  
 
 - **Purely manual**: No automated interaction with the webpage.  
   **纯手动模式**：不与网页进行任何自动化交互。  
@@ -47,8 +47,8 @@ Overlay a semi-transparent reference image on any webpage (e.g., wplace). Drag t
 5. Use the controls to:  
    - Move image (`Alt` + drag)  
      移动图像（`Alt` + 拖动）  
-   - Scale (`Alt` + `Mouse wheel`)  
-     缩放（`Alt` +`鼠标滚轮`）  
+   - Scale (`Alt` + '+' '-')  
+     缩放（`Alt`  +  '+' '-'）  
    - Adjust opacity (`Alt` + `1 - 9`)  
      调节透明度（`Alt` + `1 - 9`）  
    - Fit to width/height (buttons)  
@@ -65,7 +65,7 @@ Overlay a semi-transparent reference image on any webpage (e.g., wplace). Drag t
 | Action / 操作                  |          Shortcut / 快捷键          |
 |--------------------------------|-------------------------------------|
 | Move image / 移动图像           |      Alt + Drag / Alt + 拖动        |
-| Scale image / 缩放图像          | Alt + Mouse Wheel / Alt +  鼠标滚轮  |
+| Scale image / 缩放图像          | Alt + Mouse Wheel / Alt +  '+' '-'  |
 | Adjust opacity / 调节透明度     |         `Alt` + `1 - 9`             |
 | Fit to Width / 适应宽度         |           button /  按钮            |
 | Fit to Height / 适应高度        |           button /  按钮            |
