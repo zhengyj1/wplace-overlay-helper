@@ -1,5 +1,5 @@
 
-// Popup script - 2.2.0 (stabilized, throttled)
+// Popup script - 2.2.0 (stabilized, scale 0–20x)
 function activeTab(cb){ chrome.tabs.query({active:true,currentWindow:true}, tabs=>cb(tabs[0])); }
 function injectAndRetry(tab, message, cb){
   if (!tab || !tab.id) return;
@@ -64,7 +64,7 @@ function scheduleScaleSend(v){
   if (rafIdScale) return;
   rafIdScale = requestAnimationFrame(()=>{
     rafIdScale = 0;
-    const val = clamp(parseFloat(pendingScale)||1, 0, 3);
+    const val = clamp(parseFloat(pendingScale)||1, 0, 20);
     send('wpo_set_scale', {scale: val});
   });
 }
@@ -82,7 +82,7 @@ function scheduleOpacitySend(v){
 
 // Scale controls (range + number)
 function uiSetScale(v, source){
-  v = clamp(parseFloat(v)||1, 0, 3);
+  v = clamp(parseFloat(v)||1, 0, 20);
   if (source !== 'range') $('scaleRange').value = v.toFixed(2);
   if (source !== 'input') $('scaleInput').value = v.toFixed(2);
   scheduleScaleSend(v);

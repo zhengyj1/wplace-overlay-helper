@@ -1,5 +1,5 @@
 
-// WPlace Overlay Helper - 2.2.0 (stabilized)
+// WPlace Overlay Helper - 2.2.0 (stabilized, scale 0–20x)
 (() => {
   'use strict';
   const STATE_KEY = "wpo_state::" + location.origin;
@@ -50,8 +50,8 @@
     img.onerror=()=>console.warn("[WPO] image load failed");
     img.src=src;
   }
-  function fitW(){ if(naturalW){ scale=innerWidth/naturalW; scale=clamp(scale, 0, 3); apply(); } }
-  function fitH(){ if(naturalH){ scale=innerHeight/naturalH; scale=clamp(scale, 0, 3); apply(); } }
+  function fitW(){ if(naturalW){ scale=innerWidth/naturalW; scale=clamp(scale, 0, 20); apply(); } }
+  function fitH(){ if(naturalH){ scale=innerHeight/naturalH; scale=clamp(scale, 0, 20); apply(); } }
   function reset(){ tx=innerWidth/2; ty=innerHeight/2; scale=1; opacity=.4; apply(); }
 
   function ensure(){
@@ -135,16 +135,14 @@
     addEventListener('pointermove', e=>{ if(!dragging) return; const dx=e.clientX-sx, dy=e.clientY-sy; tx=bx+dx; ty=by+dy; apply(); }, {capture:true});
     addEventListener('pointerup', ()=>{ dragging=false; }, {capture:true});
 
-    // NO wheel scaling (per request)
-
     // Keyboard scale: ONLY Alt + +/-
     addEventListener('keydown', e=>{
       if(!e.altKey) return;
       edit = true;
       const k = e.key;
       let handled = false;
-      const stepUp = () => { scale = clamp(scale * 1.05, 0, 3); handled = true; };
-      const stepDown = () => { scale = clamp(scale * 0.95, 0, 3); handled = true; };
+      const stepUp = () => { scale = clamp(scale * 1.05, 0, 20); handled = true; };
+      const stepDown = () => { scale = clamp(scale * 0.95, 0, 20); handled = true; };
       if (k === '+' || k === 'Add' || k === 'NumpadAdd' || (k === '=' && e.shiftKey)) stepUp();
       else if (k === '-' || k === 'Subtract' || k === 'NumpadSubtract') stepDown();
       else if (k === '[') { opacity = clamp(opacity - 0.05, 0, 1); handled = true; }
@@ -173,7 +171,7 @@
       case 'wpo_remove': if(overlay&&overlay.parentNode) overlay.parentNode.removeChild(overlay); overlay=null; img=null; panel=null; visible=false; saveNow(); sendResponse({ok:true}); break;
       case 'wpo_set_url': ensure(); setSrc(msg.url); show(); sendResponse({ok:true}); break;
       case 'wpo_set_opacity': ensure(); opacity=clamp(Number(msg.opacity)||0,0,1); apply(); sendResponse({ok:true}); break;
-      case 'wpo_set_scale': ensure(); scale=clamp(Number(msg.scale)||1,0,3); apply(); sendResponse({ok:true}); break;
+      case 'wpo_set_scale': ensure(); scale=clamp(Number(msg.scale)||1,0,20); apply(); sendResponse({ok:true}); break;
       case 'wpo_fit': ensure(); (msg.mode==='width'?fitW:fitH)(); sendResponse({ok:true}); break;
       case 'wpo_reset': ensure(); reset(); sendResponse({ok:true}); break;
       case 'wpo_get_state': ensure(); sendResponse({ok:true, scale, opacity, panelVisible, visible}); break;
